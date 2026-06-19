@@ -89,6 +89,66 @@ const DEFAULT_LOGOS = {
   ai: "https://upload.wikimedia.org/wikipedia/commons/6/66/OpenAI_logo_2025_%28symbol%29.svg",
 };
 
+export const MODEL_PRESETS = {
+  gemini: {
+    name: "GEMINI",
+    accent: "#54f2ef",
+    logo: DEFAULT_LOGOS.gemini,
+    five_hour: {
+      remaining: "sensor.ai_allowance_monitor_agy_gemini_5h_remaining",
+      reset: "sensor.ai_allowance_monitor_agy_gemini_5h_reset",
+    },
+    weekly: {
+      remaining: "sensor.ai_allowance_monitor_agy_gemini_weekly_remaining",
+      reset: "sensor.ai_allowance_monitor_agy_gemini_weekly_reset",
+    },
+  },
+  codex: {
+    name: "CODEX",
+    accent: "#76f29b",
+    logo: DEFAULT_LOGOS.gpt,
+    five_hour: {
+      remaining: "sensor.ai_allowance_monitor_codex_gpt_5h_remaining",
+      reset: "sensor.ai_allowance_monitor_codex_gpt_5h_reset",
+    },
+    weekly: {
+      remaining: "sensor.ai_allowance_monitor_codex_gpt_weekly_remaining",
+      reset: "sensor.ai_allowance_monitor_codex_gpt_weekly_reset",
+    },
+  },
+};
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function presetKeyForModel(model) {
+  const value = `${model?.preset || ""} ${model?.name || ""} ${model?.logo || ""}`.toLowerCase();
+  if (value.includes("gemini")) return "gemini";
+  if (value.includes("codex")) return "codex";
+  return null;
+}
+
+export function createPresetModel(key) {
+  const preset = MODEL_PRESETS[key];
+  if (!preset) throw new Error(`Unknown AI usage preset: ${key}`);
+  return { preset: key, ...clone(preset) };
+}
+
+export function getPresetEnabled(config, key) {
+  return Array.isArray(config?.models) && config.models.some((model) => presetKeyForModel(model) === key);
+}
+
+export function applyPresetToggle(config, key, enabled) {
+  const next = { ...(config || {}) };
+  const models = Array.isArray(config?.models) ? config.models.map((model) => clone(model)) : [];
+  const filtered = models.filter((model) => presetKeyForModel(model) !== key);
+
+  if (enabled) filtered.push(createPresetModel(key));
+  next.models = filtered;
+  return next;
+}
+
 export function logoTypeForModel(model) {
   const value = `${model?.logo || ""} ${model?.name || ""} ${model?.mark || ""}`.toLowerCase();
   if (value.includes("gemini")) return "gemini";
@@ -120,6 +180,21 @@ function renderLogo(model) {
 const BaseHTMLElement = typeof HTMLElement !== "undefined" ? HTMLElement : class {};
 
 export class AiUsageBannerCard extends BaseHTMLElement {
+  static getStubConfig() {
+    return {
+      title: "AI Usage",
+      subtitle: "Allowance remaining",
+      width: "62.5%",
+      max_width: "62.5%",
+      align: "left",
+      models: [createPresetModel("gemini"), createPresetModel("codex")],
+    };
+  }
+
+  static getConfigElement() {
+    return document.createElement("ai-usage-banner-card-editor");
+  }
+
   setConfig(config) {
     if (!config || !Array.isArray(config.models) || config.models.length === 0) {
       throw new Error("ai-usage-banner-card requires a models array");
@@ -190,6 +265,112 @@ export class AiUsageBannerCard extends BaseHTMLElement {
   }
 }
 
+export class AiUsageBannerCardEditor extends BaseHTMLElement {
+  setConfig(config) {
+    this.config = config || AiUsageBannerCard.getStubConfig();
+    if (!this.shadowRoot && typeof this.attachShadow === "function") {
+      this.attachShadow({ mode: "open" });
+    }
+    this.render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+  }
+
+  updateConfig(config) {
+    this.config = config;
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
+    this.render();
+  }
+
+  updateField(key, value) {
+    const next = { ...(this.config || {}), [key]: value };
+    this.updateConfig(next);
+  }
+
+  updatePreset(key, enabled) {
+    this.updateConfig(applyPresetToggle(this.config || {}, key, enabled));
+  }
+
+  renderPreset(key, label, description) {
+    const enabled = getPresetEnabled(this.config, key);
+    const preset = createPresetModel(key);
+    const entityLines = [
+      ["5h remaining", preset.five_hour.remaining],
+      ["5h reset", preset.five_hour.reset],
+      ["Weekly remaining", preset.weekly.remaining],
+      ["Weekly reset", preset.weekly.reset],
+    ]
+      .map(([name, entity]) => `<div class="entity"><span>${escapeHtml(name)}</span><code>${escapeHtml(entity)}</code></div>`)
+      .join("");
+
+    return `
+      <label class="toggle">
+        <input type="checkbox" data-preset="${escapeHtml(key)}" ${enabled ? "checked" : ""}>
+        <span>
+          <strong>${escapeHtml(label)}</strong>
+          <em>${escapeHtml(description)}</em>
+        </span>
+      </label>
+      ${enabled ? `<div class="entities">${entityLines}</div>` : ""}
+    `;
+  }
+
+  render() {
+    if (!this.shadowRoot) return;
+    const config = this.config || {};
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; color: var(--primary-text-color, #e5eef7); font-family: var(--paper-font-body1_-_font-family, system-ui, sans-serif); }
+        .editor { display:grid; gap:14px; }
+        label.field { display:grid; gap:6px; font-size:13px; color: var(--secondary-text-color, #9fb0c1); }
+        input[type="text"], select {
+          width:100%;
+          box-sizing:border-box;
+          border:1px solid var(--divider-color, rgba(127,149,169,.35));
+          border-radius:8px;
+          padding:10px 11px;
+          background: var(--card-background-color, #101923);
+          color: var(--primary-text-color, #e5eef7);
+          font: inherit;
+        }
+        .preset { display:grid; gap:8px; padding:12px; border:1px solid var(--divider-color, rgba(127,149,169,.35)); border-radius:8px; }
+        .toggle { display:flex; align-items:center; gap:12px; cursor:pointer; }
+        .toggle input { width:18px; height:18px; flex:0 0 auto; }
+        .toggle span { display:grid; gap:2px; }
+        .toggle strong { font-size:14px; font-weight:650; }
+        .toggle em { font-size:12px; font-style:normal; color: var(--secondary-text-color, #9fb0c1); }
+        .entities { display:grid; gap:5px; margin-left:30px; }
+        .entity { display:grid; grid-template-columns:110px minmax(0,1fr); gap:8px; align-items:center; font-size:12px; }
+        .entity span { color: var(--secondary-text-color, #9fb0c1); }
+        code { overflow-wrap:anywhere; color: var(--primary-text-color, #e5eef7); }
+      </style>
+      <div class="editor">
+        <label class="field">Title<input type="text" data-field="title" value="${escapeHtml(config.title || "AI Usage")}"></label>
+        <label class="field">Subtitle<input type="text" data-field="subtitle" value="${escapeHtml(config.subtitle || "Allowance remaining")}"></label>
+        <label class="field">Width<input type="text" data-field="width" value="${escapeHtml(config.width || "100%")}"></label>
+        <label class="field">Max width<input type="text" data-field="max_width" value="${escapeHtml(config.max_width || config.maxWidth || config.width || "100%")}"></label>
+        <label class="field">Alignment
+          <select data-field="align">
+            ${["stretch", "left", "center", "right"].map((value) => `<option value="${value}" ${(config.align || "stretch") === value ? "selected" : ""}>${value}</option>`).join("")}
+          </select>
+        </label>
+        <section class="preset">${this.renderPreset("gemini", "Gemini", "Create the Gemini row with logo and default MQTT entities.")}</section>
+        <section class="preset">${this.renderPreset("codex", "Codex", "Create the Codex row with logo and default MQTT entities.")}</section>
+      </div>
+    `;
+
+    this.shadowRoot.querySelectorAll("[data-field]").forEach((control) => {
+      control.addEventListener("change", (event) => this.updateField(event.currentTarget.dataset.field, event.currentTarget.value));
+    });
+    this.shadowRoot.querySelectorAll("[data-preset]").forEach((control) => {
+      control.addEventListener("change", (event) => this.updatePreset(event.currentTarget.dataset.preset, event.currentTarget.checked));
+    });
+  }
+}
+
 AiUsageBannerCard.styles = `
   :host {
     display: block;
@@ -203,6 +384,7 @@ AiUsageBannerCard.styles = `
   }
 
   ha-card {
+    display: block;
     overflow: hidden;
     width: 100%;
     border-radius: 8px;
@@ -459,6 +641,9 @@ const cardPickerEntry = {
 if (typeof window !== "undefined" && typeof HTMLElement !== "undefined") {
   if (!customElements.get("ai-usage-banner-card")) {
     customElements.define("ai-usage-banner-card", AiUsageBannerCard);
+  }
+  if (!customElements.get("ai-usage-banner-card-editor")) {
+    customElements.define("ai-usage-banner-card-editor", AiUsageBannerCardEditor);
   }
 
   window.customCards = window.customCards || [];

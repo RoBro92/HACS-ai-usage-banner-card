@@ -65,6 +65,15 @@ max_width: 62.5%
 align: left
 ```
 
+## Visual Editor
+
+The card includes a Lovelace visual editor. It currently has preset toggles for:
+
+- Gemini
+- Codex
+
+Turning a preset on creates the matching row with logo, accent color, and the default MQTT discovery entity IDs. Turning it off removes that preset row without touching unrelated custom rows.
+
 ## Sensor Contract
 
 Each model can define these sensors:
@@ -96,6 +105,21 @@ See:
 - [MQTT discovery topics](docs/mqtt-discovery.md)
 - [Full dashboard example](examples/dashboard.yaml)
 
+Quick installers:
+
+```bash
+# Linux/LXC
+curl -fsSL https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-banner-card/main/examples/install/install-linux-lxc.sh | sudo bash
+
+# macOS
+curl -fsSL https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-banner-card/main/examples/install/install-macos.sh | bash
+```
+
+```powershell
+# Windows PowerShell
+iwr https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-banner-card/main/examples/install/install-windows.ps1 -UseB | iex
+```
+
 ## Config
 
 | Key | Required | Description |
@@ -121,12 +145,19 @@ See:
 ```bash
 npm run build
 npm run check
+python3 -m http.server 4173
 ```
 
 The HACS release file is generated at:
 
 ```text
 dist/HACS-ai-usage-banner-card.js
+```
+
+Local visual demo:
+
+```text
+http://127.0.0.1:4173/demo/
 ```
 
 ## Origin

@@ -11,3 +11,7 @@ RoBro92/HACS-ai-usage-banner-card
 ```
 
 Use MQTT discovery sensors or any sensors with numeric percentage states and timestamp reset states.
+
+## Visual Editor
+
+The visual editor includes Gemini and Codex preset toggles. Enabling a toggle creates the relevant row, logo, accent color, and default MQTT entity mapping.
