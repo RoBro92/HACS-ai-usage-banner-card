@@ -4,10 +4,10 @@ Read-only Home Assistant MCP investigation found:
 
 - Dashboard: `desk-display`, title `Desk Display`.
 - AI tab/view: `AI Agents`, path `ai-agents`, panel view.
-- Card type: `custom:ai-usage-banner-card`.
+- Card type: `custom:ai-usage-card`.
 - Card location: `config['views'][1]['cards'][0]`.
 - Resource type: inline Lovelace ES module.
-- Registered custom element: `ai-usage-banner-card`.
+- Registered custom element: `ai-usage-card`.
 - Data source: MQTT sensors from the `mqtt` platform.
 
 The live card config contains three rows:

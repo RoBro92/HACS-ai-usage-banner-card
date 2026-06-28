@@ -31,10 +31,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/RoBro92/HACS-ai-usage-banner-card.git"
+    "url": "https://github.com/RoBro92/HACS-ai-usage-card.git"
   },
   "bugs": {
-    "url": "https://github.com/RoBro92/HACS-ai-usage-banner-card/issues"
+    "url": "https://github.com/RoBro92/HACS-ai-usage-card/issues"
   },
-  "homepage": "https://github.com/RoBro92/HACS-ai-usage-banner-card#readme"
+  "homepage": "https://github.com/RoBro92/HACS-ai-usage-card#readme"
 }
