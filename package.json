@@ -1,6 +1,6 @@
 {
   "name": "hacs-ai-usage-card",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "A Home Assistant Lovelace card for AI CLI allowance and token window monitoring.",
   "type": "module",
   "scripts": {
