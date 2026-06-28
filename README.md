@@ -1,12 +1,12 @@
-# AI Usage Banner Card
+# AI Usage Card
 
-AI Usage Banner Card is a Home Assistant Lovelace custom card for monitoring AI CLI allowance windows. It shows a compact row per model or account, with 5-hour and weekly remaining percentages plus reset countdowns.
+AI Usage Card is a Home Assistant Lovelace custom card for monitoring AI CLI allowance windows. It shows a compact row per model or account, with 5-hour and weekly remaining percentages plus reset countdowns.
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RoBro92&repository=HACS-ai-usage-banner-card&category=dashboard)
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RoBro92&repository=HACS-ai-usage-card&category=dashboard)
 
 ## Preview
 
-![AI Usage Banner Card preview](docs/images/ai-usage-card-preview.svg)
+![AI Usage Card preview](docs/images/ai-usage-card-preview.svg)
 
 ## What It Displays
 
@@ -22,13 +22,13 @@ The card is display-only. It reads Home Assistant sensor entities and does not c
 Install through HACS as a custom Dashboard repository:
 
 ```text
-RoBro92/HACS-ai-usage-banner-card
+RoBro92/HACS-ai-usage-card
 ```
 
 The Lovelace resource should be:
 
 ```yaml
-url: /hacsfiles/HACS-ai-usage-banner-card/HACS-ai-usage-banner-card.js
+url: /hacsfiles/HACS-ai-usage-card/HACS-ai-usage-card.js
 type: module
 ```
 
@@ -37,19 +37,25 @@ Hard refresh Home Assistant after installing or updating.
 ## Basic Usage
 
 ```yaml
-type: custom:ai-usage-banner-card
-title: AI Usage
-subtitle: Allowance remaining
-models:
-  - name: GEMINI
-    accent: "#54f2ef"
-    logo: https://cdn.simpleicons.org/googlegemini/54f2ef
-    five_hour:
-      remaining: sensor.ai_allowance_monitor_agy_gemini_5h_remaining
-      reset: sensor.ai_allowance_monitor_agy_gemini_5h_reset
-    weekly:
-      remaining: sensor.ai_allowance_monitor_agy_gemini_weekly_remaining
-      reset: sensor.ai_allowance_monitor_agy_gemini_weekly_reset
+type: custom:ai-usage-card
+title: AI Cloud Credits
+providers:
+  - name: AGY
+    logo: https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg
+    models:
+      - name: Gemini
+        accent: "#4285f4"
+        weekly:
+          remaining: sensor.ai_allowance_monitor_agy_gemini_weekly_remaining
+          reset: sensor.ai_allowance_monitor_agy_gemini_weekly_reset
+        five_hour:
+          remaining: sensor.ai_allowance_monitor_agy_gemini_5h_remaining
+          reset: sensor.ai_allowance_monitor_agy_gemini_5h_reset
+      - name: Claude / GPT
+        accent: "#d97757"
+        five_hour:
+          remaining: sensor.ai_allowance_monitor_agy_claude_gpt_5h_remaining
+          reset: sensor.ai_allowance_monitor_agy_claude_gpt_5h_reset
   - name: CODEX
     accent: "#76f29b"
     logo: https://upload.wikimedia.org/wikipedia/commons/6/66/OpenAI_logo_2025_%28symbol%29.svg
@@ -78,7 +84,7 @@ The card includes a Lovelace visual editor. It currently has preset toggles for:
 
 Turning a preset on creates the matching row with logo, accent color, and the default MQTT discovery entity IDs. Turning it off removes that preset row without touching unrelated custom rows.
 
-![AI Usage Banner Card visual editor preview](docs/images/ai-usage-editor-preview.svg)
+![AI Usage Card visual editor preview](docs/images/ai-usage-editor-preview.svg)
 
 ## Sensor Contract
 
@@ -115,15 +121,15 @@ Quick installers:
 
 ```bash
 # Linux/LXC
-curl -fsSL https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-banner-card/main/examples/install/install-linux-lxc.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-card/main/examples/install/install-linux-lxc.sh | sudo bash
 
 # macOS
-curl -fsSL https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-banner-card/main/examples/install/install-macos.sh | bash
+curl -fsSL https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-card/main/examples/install/install-macos.sh | bash
 ```
 
 ```powershell
 # Windows PowerShell
-iwr https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-banner-card/main/examples/install/install-windows.ps1 -UseB | iex
+iwr https://raw.githubusercontent.com/RoBro92/HACS-ai-usage-card/main/examples/install/install-windows.ps1 -UseB | iex
 ```
 
 ## Config

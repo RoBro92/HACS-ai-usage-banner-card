@@ -83,7 +83,7 @@ function renderMetric(label, resetLabel, metric, dimmed = false) {
 }
 
 const DEFAULT_LOGOS = {
-  gemini: "https://cdn.simpleicons.org/googlegemini/54f2ef",
+  gemini: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg",
   claude: "https://cdn.simpleicons.org/claude/b9a7ff",
   gpt: "https://upload.wikimedia.org/wikipedia/commons/6/66/OpenAI_logo_2025_%28symbol%29.svg",
   ai: "https://upload.wikimedia.org/wikipedia/commons/6/66/OpenAI_logo_2025_%28symbol%29.svg",
@@ -179,7 +179,7 @@ function renderLogo(model) {
 
 const BaseHTMLElement = typeof HTMLElement !== "undefined" ? HTMLElement : class {};
 
-export class AiUsageBannerCard extends BaseHTMLElement {
+export class AiUsageCard extends BaseHTMLElement {
   static getStubConfig() {
     return {
       title: "AI Usage",
@@ -187,17 +187,17 @@ export class AiUsageBannerCard extends BaseHTMLElement {
       width: "62.5%",
       max_width: "62.5%",
       align: "left",
-      models: [createPresetModel("gemini"), createPresetModel("codex")],
+      providers: [createPresetModel("gemini"), createPresetModel("codex")],
     };
   }
 
   static getConfigElement() {
-    return document.createElement("ai-usage-banner-card-editor");
+    return document.createElement("ai-usage-card-editor");
   }
 
   setConfig(config) {
     if (!config || !Array.isArray(config.models) || config.models.length === 0) {
-      throw new Error("ai-usage-banner-card requires a models array");
+      throw new Error("ai-usage-card requires a models array");
     }
 
     this.config = config;
@@ -219,7 +219,7 @@ export class AiUsageBannerCard extends BaseHTMLElement {
     if (!this.shadowRoot || !this.config) return;
     const title = this.config.title || "AI Usage";
     const subtitle = this.config.subtitle || "Allowance remaining";
-    const models = this.config.models.map((model) => this.renderModel(model)).join("");
+    const providers = (this.config.providers || []).map((provider) => this.renderProvider(provider)).join("");
     const width = this.config.width || "100%";
     const maxWidth = this.config.max_width || this.config.maxWidth || width;
     const align = this.config.align || "stretch";
@@ -230,7 +230,7 @@ export class AiUsageBannerCard extends BaseHTMLElement {
     this.style.setProperty("--ai-usage-card-margin", margin);
 
     this.shadowRoot.innerHTML = `
-      <style>${AiUsageBannerCard.styles}</style>
+      <style>${AiUsageCard.styles}</style>
       <ha-card>
         <div class="wrap">
           <div class="heading">
@@ -239,10 +239,31 @@ export class AiUsageBannerCard extends BaseHTMLElement {
               <div class="title">${escapeHtml(title)}</div>
             </div>
           </div>
-          <div class="models">${models}</div>
+          <div class="providers">${providers}</div>
         </div>
       </ha-card>
     `;
+  }
+
+  
+  renderProvider(provider) {
+    if (provider.models && provider.models.length > 0) {
+      const modelsHtml = provider.models.map(model => this.renderModel(model)).join("");
+      return `
+        <div class="provider-group">
+          <div class="provider-header">
+            ${provider.logo ? `<img class="logo-img" src="${escapeHtml(provider.logo)}" alt="logo">` : ''}
+            <div class="provider-name">${escapeHtml(provider.name || "Provider")}</div>
+          </div>
+          <div class="provider-models">
+            ${modelsHtml}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Direct metrics
+    return this.renderModel(provider);
   }
 
   renderModel(model) {
@@ -265,9 +286,9 @@ export class AiUsageBannerCard extends BaseHTMLElement {
   }
 }
 
-export class AiUsageBannerCardEditor extends BaseHTMLElement {
+export class AiUsageCardEditor extends BaseHTMLElement {
   setConfig(config) {
-    this.config = config || AiUsageBannerCard.getStubConfig();
+    this.config = config || AiUsageCard.getStubConfig();
     if (!this.shadowRoot && typeof this.attachShadow === "function") {
       this.attachShadow({ mode: "open" });
     }
@@ -371,7 +392,7 @@ export class AiUsageBannerCardEditor extends BaseHTMLElement {
   }
 }
 
-AiUsageBannerCard.styles = `
+AiUsageCard.styles = `
   :host {
     display: block;
     width: var(--ai-usage-card-width, 100%);
@@ -421,6 +442,41 @@ AiUsageBannerCard.styles = `
     line-height: 1.1;
     font-weight: 500;
     letter-spacing: 0;
+  }
+
+  
+  .providers {
+    display: grid;
+    gap: 12px;
+  }
+  .provider-group {
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    background: rgba(8, 20, 30, .4);
+    border-radius: 12px;
+    border: 1px solid rgba(168, 221, 255, .15);
+  }
+  .provider-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 4px;
+    margin-bottom: 2px;
+  }
+  .provider-header .logo-img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+  .provider-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(232, 247, 255, .9);
+  }
+  .provider-models {
+    display: grid;
+    gap: 6px;
   }
 
   .models {
@@ -631,19 +687,19 @@ AiUsageBannerCard.styles = `
 `;
 
 const cardPickerEntry = {
-  type: "ai-usage-banner-card",
-  name: "AI Usage Banner Card",
+  type: "ai-usage-card",
+  name: "AI Usage Card",
   description: "Cinematic two-bar AI allowance monitor.",
   preview: true,
-  documentationURL: "https://github.com/RoBro92/HACS-ai-usage-banner-card",
+  documentationURL: "https://github.com/RoBro92/HACS-ai-usage-card",
 };
 
 if (typeof window !== "undefined" && typeof HTMLElement !== "undefined") {
-  if (!customElements.get("ai-usage-banner-card")) {
-    customElements.define("ai-usage-banner-card", AiUsageBannerCard);
+  if (!customElements.get("ai-usage-card")) {
+    customElements.define("ai-usage-card", AiUsageCard);
   }
-  if (!customElements.get("ai-usage-banner-card-editor")) {
-    customElements.define("ai-usage-banner-card-editor", AiUsageBannerCardEditor);
+  if (!customElements.get("ai-usage-card-editor")) {
+    customElements.define("ai-usage-card-editor", AiUsageCardEditor);
   }
 
   window.customCards = window.customCards || [];

@@ -9,7 +9,7 @@ Compact Lovelace card for AI CLI allowance monitoring.
 Install as a HACS custom Dashboard repository:
 
 ```text
-RoBro92/HACS-ai-usage-banner-card
+RoBro92/HACS-ai-usage-card
 ```
 
 Use MQTT discovery sensors or any sensors with numeric percentage states and timestamp reset states.

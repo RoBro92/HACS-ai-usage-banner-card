@@ -1,11 +1,11 @@
 {
-  "name": "hacs-ai-usage-banner-card",
+  "name": "hacs-ai-usage-card",
   "version": "0.2.2",
   "description": "A Home Assistant Lovelace card for AI CLI allowance and token window monitoring.",
   "type": "module",
   "scripts": {
     "build": "node scripts/build-dist.mjs",
-    "check": "node --check ai-usage-banner-card.js && node --check examples/collectors/parse-ai-usage.mjs && node --check examples/collectors/run-ai-usage-collector.mjs && node --test test/*.test.mjs",
+    "check": "node --check ai-usage-card.js && node --check examples/collectors/parse-ai-usage.mjs && node --check examples/collectors/run-ai-usage-collector.mjs && node --test test/*.test.mjs",
     "test": "node --test test/*.test.mjs"
   },
   "keywords": [
