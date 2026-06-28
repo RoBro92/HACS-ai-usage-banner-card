@@ -83,10 +83,11 @@ function renderMetric(label, resetLabel, metric, dimmed = false) {
 }
 
 const DEFAULT_LOGOS = {
-  gemini: "https://cdn.simpleicons.org/googlegemini/54f2ef",
+  gemini: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg",
   claude: "https://cdn.simpleicons.org/claude/b9a7ff",
   gpt: "https://upload.wikimedia.org/wikipedia/commons/6/66/OpenAI_logo_2025_%28symbol%29.svg",
   ai: "https://upload.wikimedia.org/wikipedia/commons/6/66/OpenAI_logo_2025_%28symbol%29.svg",
+  grok: "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_2023_%28X%29_logo.svg",
 };
 
 export const MODEL_PRESETS = {
@@ -102,6 +103,7 @@ export const MODEL_PRESETS = {
       remaining: "sensor.ai_allowance_monitor_agy_gemini_weekly_remaining",
       reset: "sensor.ai_allowance_monitor_agy_gemini_weekly_reset",
     },
+    status: "sensor.ai_allowance_monitor_agy_gemini_status",
   },
   codex: {
     name: "CODEX",
@@ -115,6 +117,35 @@ export const MODEL_PRESETS = {
       remaining: "sensor.ai_allowance_monitor_codex_gpt_weekly_remaining",
       reset: "sensor.ai_allowance_monitor_codex_gpt_weekly_reset",
     },
+    status: "sensor.ai_allowance_monitor_codex_gpt_status",
+  },
+  claude: {
+    name: "CLAUDE",
+    accent: "#b9a7ff",
+    logo: DEFAULT_LOGOS.claude,
+    five_hour: {
+      remaining: "sensor.ai_allowance_monitor_claude_5h_remaining",
+      reset: "sensor.ai_allowance_monitor_claude_5h_reset",
+    },
+    weekly: {
+      remaining: "sensor.ai_allowance_monitor_claude_weekly_remaining",
+      reset: "sensor.ai_allowance_monitor_claude_weekly_reset",
+    },
+    status: "sensor.ai_allowance_monitor_claude_status",
+  },
+  grok: {
+    name: "GROK",
+    accent: "#ffffff",
+    logo: DEFAULT_LOGOS.grok,
+    five_hour: {
+      remaining: "sensor.ai_allowance_monitor_grok_5h_remaining",
+      reset: "sensor.ai_allowance_monitor_grok_5h_reset",
+    },
+    weekly: {
+      remaining: "sensor.ai_allowance_monitor_grok_weekly_remaining",
+      reset: "sensor.ai_allowance_monitor_grok_weekly_reset",
+    },
+    status: "sensor.ai_allowance_monitor_grok_status",
   },
 };
 
@@ -126,6 +157,8 @@ function presetKeyForModel(model) {
   const value = `${model?.preset || ""} ${model?.name || ""} ${model?.logo || ""}`.toLowerCase();
   if (value.includes("gemini")) return "gemini";
   if (value.includes("codex")) return "codex";
+  if (value.includes("claude")) return "claude";
+  if (value.includes("grok")) return "grok";
   return null;
 }
 
@@ -153,6 +186,7 @@ export function logoTypeForModel(model) {
   const value = `${model?.logo || ""} ${model?.name || ""} ${model?.mark || ""}`.toLowerCase();
   if (value.includes("gemini")) return "gemini";
   if (value.includes("claude") || value.includes("clude")) return "claude";
+  if (value.includes("grok")) return "grok";
   if (value.includes("gpt") || value.includes("openai") || value.includes("codex")) return "gpt";
   return "ai";
 }
@@ -179,7 +213,7 @@ function renderLogo(model) {
 
 const BaseHTMLElement = typeof HTMLElement !== "undefined" ? HTMLElement : class {};
 
-export class AiUsageBannerCard extends BaseHTMLElement {
+export class AiUsageCard extends BaseHTMLElement {
   static getStubConfig() {
     return {
       title: "AI Usage",
@@ -187,17 +221,18 @@ export class AiUsageBannerCard extends BaseHTMLElement {
       width: "62.5%",
       max_width: "62.5%",
       align: "left",
-      models: [createPresetModel("gemini"), createPresetModel("codex")],
+      show_status: true,
+      providers: [createPresetModel("gemini"), createPresetModel("claude"), createPresetModel("codex")],
     };
   }
 
   static getConfigElement() {
-    return document.createElement("ai-usage-banner-card-editor");
+    return document.createElement("ai-usage-card-editor");
   }
 
   setConfig(config) {
     if (!config || !Array.isArray(config.models) || config.models.length === 0) {
-      throw new Error("ai-usage-banner-card requires a models array");
+      throw new Error("ai-usage-card requires a models array");
     }
 
     this.config = config;
@@ -219,7 +254,7 @@ export class AiUsageBannerCard extends BaseHTMLElement {
     if (!this.shadowRoot || !this.config) return;
     const title = this.config.title || "AI Usage";
     const subtitle = this.config.subtitle || "Allowance remaining";
-    const models = this.config.models.map((model) => this.renderModel(model)).join("");
+    const providers = (this.config.providers || []).map((provider) => this.renderProvider(provider)).join("");
     const width = this.config.width || "100%";
     const maxWidth = this.config.max_width || this.config.maxWidth || width;
     const align = this.config.align || "stretch";
@@ -230,7 +265,7 @@ export class AiUsageBannerCard extends BaseHTMLElement {
     this.style.setProperty("--ai-usage-card-margin", margin);
 
     this.shadowRoot.innerHTML = `
-      <style>${AiUsageBannerCard.styles}</style>
+      <style>${AiUsageCard.styles}</style>
       <ha-card>
         <div class="wrap">
           <div class="heading">
@@ -239,22 +274,72 @@ export class AiUsageBannerCard extends BaseHTMLElement {
               <div class="title">${escapeHtml(title)}</div>
             </div>
           </div>
-          <div class="models">${models}</div>
+          <div class="providers">${providers}</div>
         </div>
       </ha-card>
     `;
+  }
+
+  
+  renderProvider(provider) {
+    if (provider.models && provider.models.length > 0) {
+      const modelsHtml = provider.models.map(model => this.renderModel(model)).join("");
+      return `
+        <div class="provider-group">
+          <div class="provider-header">
+            ${provider.logo ? `<img class="logo-img" src="${escapeHtml(provider.logo)}" alt="logo">` : ''}
+            <div class="provider-name">${escapeHtml(provider.name || "Provider")}</div>
+          </div>
+          <div class="provider-models">
+            ${modelsHtml}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Direct metrics
+    return this.renderModel(provider);
   }
 
   renderModel(model) {
     const fiveHour = metricState(this._hass, model.five_hour || model.fiveHour);
     const weekly = metricState(this._hass, model.weekly);
     const labels = model.labels || this.config.labels || {};
+    const showStatus = this.config.show_status !== false;
+    const statusVal = showStatus && model.status ? String(stateValue(this._hass, model.status)).toLowerCase() : null;
+
+    let statusHtml = '';
+    let headClass = 'model-head';
+    if (showStatus && model.status) {
+      headClass += ' has-status';
+      let icon = '❓';
+      let text = 'Unknown';
+      let color = '#9fb0c1';
+      
+      if (statusVal === 'ok' || statusVal === 'live') {
+        icon = '🟢'; text = 'Live'; color = '#4caf50';
+      } else if (statusVal === 'auth_required') {
+        icon = '⚠️'; text = 'Needs Auth'; color = '#ff9800';
+      } else if (statusVal === 'error' || statusVal === 'down' || statusVal === 'unavailable') {
+        icon = '❗'; text = 'Error'; color = '#f44336';
+      }
+      
+      statusHtml = `
+        <div class="model-status" style="color: ${color};">
+          <span class="status-icon">${icon}</span>
+          <span class="status-text">${text}</span>
+        </div>
+      `;
+    }
 
     return `
       <section class="model" style="--accent:${escapeHtml(model.accent || "#54f2ef")}">
-        <div class="model-head">
+        <div class="${headClass}">
           <div class="logo">${renderLogo(model)}</div>
-          <div class="model-name">${escapeHtml(model.name || "AI Model")}</div>
+          <div class="model-info">
+            <div class="model-name">${escapeHtml(model.name || "AI Model")}</div>
+            ${statusHtml}
+          </div>
         </div>
         <div class="rows">
           ${renderMetric(labels.five_hour || labels.fiveHour || "5h remaining", labels.five_hour_reset || labels.fiveHourReset || "5H RESET", fiveHour)}
@@ -265,9 +350,9 @@ export class AiUsageBannerCard extends BaseHTMLElement {
   }
 }
 
-export class AiUsageBannerCardEditor extends BaseHTMLElement {
+export class AiUsageCardEditor extends BaseHTMLElement {
   setConfig(config) {
-    this.config = config || AiUsageBannerCard.getStubConfig();
+    this.config = config || AiUsageCard.getStubConfig();
     if (!this.shadowRoot && typeof this.attachShadow === "function") {
       this.attachShadow({ mode: "open" });
     }
@@ -301,7 +386,9 @@ export class AiUsageBannerCardEditor extends BaseHTMLElement {
       ["5h reset", preset.five_hour.reset],
       ["Weekly remaining", preset.weekly.remaining],
       ["Weekly reset", preset.weekly.reset],
+      ["Status", preset.status],
     ]
+      .filter(([_, entity]) => !!entity)
       .map(([name, entity]) => `<div class="entity"><span>${escapeHtml(name)}</span><code>${escapeHtml(entity)}</code></div>`)
       .join("");
 
@@ -346,6 +433,8 @@ export class AiUsageBannerCardEditor extends BaseHTMLElement {
         .entity { display:grid; grid-template-columns:110px minmax(0,1fr); gap:8px; align-items:center; font-size:12px; }
         .entity span { color: var(--secondary-text-color, #9fb0c1); }
         code { overflow-wrap:anywhere; color: var(--primary-text-color, #e5eef7); }
+        label.toggle-field { display:flex; align-items:center; gap:8px; cursor:pointer; color: var(--primary-text-color, #e5eef7); font-size:14px; margin-bottom: 8px; }
+        label.toggle-field input { width:16px; height:16px; }
       </style>
       <div class="editor">
         <label class="field">Title<input type="text" data-field="title" value="${escapeHtml(config.title || "AI Usage")}"></label>
@@ -357,13 +446,22 @@ export class AiUsageBannerCardEditor extends BaseHTMLElement {
             ${["stretch", "left", "center", "right"].map((value) => `<option value="${value}" ${(config.align || "stretch") === value ? "selected" : ""}>${value}</option>`).join("")}
           </select>
         </label>
+        <label class="field toggle-field">
+          <input type="checkbox" data-field="show_status" ${(config.show_status !== false) ? "checked" : ""}>
+          <span>Show Status Indicators</span>
+        </label>
         <section class="preset">${this.renderPreset("gemini", "Gemini", "Create the Gemini row with logo and default MQTT entities.")}</section>
+        <section class="preset">${this.renderPreset("claude", "Claude", "Create the Claude row with logo and default MQTT entities.")}</section>
         <section class="preset">${this.renderPreset("codex", "Codex", "Create the Codex row with logo and default MQTT entities.")}</section>
+        <section class="preset">${this.renderPreset("grok", "Grok", "Create the Grok row with logo and default MQTT entities.")}</section>
       </div>
     `;
 
     this.shadowRoot.querySelectorAll("[data-field]").forEach((control) => {
-      control.addEventListener("change", (event) => this.updateField(event.currentTarget.dataset.field, event.currentTarget.value));
+      control.addEventListener("change", (event) => {
+        const value = event.currentTarget.type === "checkbox" ? event.currentTarget.checked : event.currentTarget.value;
+        this.updateField(event.currentTarget.dataset.field, value);
+      });
     });
     this.shadowRoot.querySelectorAll("[data-preset]").forEach((control) => {
       control.addEventListener("change", (event) => this.updatePreset(event.currentTarget.dataset.preset, event.currentTarget.checked));
@@ -371,7 +469,7 @@ export class AiUsageBannerCardEditor extends BaseHTMLElement {
   }
 }
 
-AiUsageBannerCard.styles = `
+AiUsageCard.styles = `
   :host {
     display: block;
     width: var(--ai-usage-card-width, 100%);
@@ -423,6 +521,41 @@ AiUsageBannerCard.styles = `
     letter-spacing: 0;
   }
 
+  
+  .providers {
+    display: grid;
+    gap: 12px;
+  }
+  .provider-group {
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    background: rgba(8, 20, 30, .4);
+    border-radius: 12px;
+    border: 1px solid rgba(168, 221, 255, .15);
+  }
+  .provider-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 4px;
+    margin-bottom: 2px;
+  }
+  .provider-header .logo-img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+  .provider-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(232, 247, 255, .9);
+  }
+  .provider-models {
+    display: grid;
+    gap: 6px;
+  }
+
   .models {
     display: grid;
     gap: 6px;
@@ -463,6 +596,13 @@ AiUsageBannerCard.styles = `
     min-width: 0;
   }
 
+  .model-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+
   .logo {
     width: 25px;
     height: 25px;
@@ -492,6 +632,19 @@ AiUsageBannerCard.styles = `
     line-height: 1.05;
     font-weight: 500;
     letter-spacing: 0;
+  }
+
+  .model-status {
+    font-size: 11px;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+  }
+
+  .status-icon {
+    font-size: 10px;
   }
 
   .rows {
@@ -631,19 +784,19 @@ AiUsageBannerCard.styles = `
 `;
 
 const cardPickerEntry = {
-  type: "ai-usage-banner-card",
-  name: "AI Usage Banner Card",
+  type: "ai-usage-card",
+  name: "AI Usage Card",
   description: "Cinematic two-bar AI allowance monitor.",
   preview: true,
-  documentationURL: "https://github.com/RoBro92/HACS-ai-usage-banner-card",
+  documentationURL: "https://github.com/RoBro92/HACS-ai-usage-card",
 };
 
 if (typeof window !== "undefined" && typeof HTMLElement !== "undefined") {
-  if (!customElements.get("ai-usage-banner-card")) {
-    customElements.define("ai-usage-banner-card", AiUsageBannerCard);
+  if (!customElements.get("ai-usage-card")) {
+    customElements.define("ai-usage-card", AiUsageCard);
   }
-  if (!customElements.get("ai-usage-banner-card-editor")) {
-    customElements.define("ai-usage-banner-card-editor", AiUsageBannerCardEditor);
+  if (!customElements.get("ai-usage-card-editor")) {
+    customElements.define("ai-usage-card-editor", AiUsageCardEditor);
   }
 
   window.customCards = window.customCards || [];
